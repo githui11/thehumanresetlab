@@ -41,13 +41,19 @@ export default async function BlogPostPage({ params }: PageProps) {
                     >
                         <ArrowLeft className="w-4 h-4" /> Back to Home
                     </Link>
-                    <span className="font-mono text-xs text-muted-foreground hidden sm:block">Liberated & Happy</span>
+                    <span className="font-mono text-xs text-muted-foreground hidden sm:block">Human Reset Lab</span>
                 </div>
             </nav>
 
             {/* Header */}
             <header className="pt-32 pb-12 px-4 max-w-4xl mx-auto text-center space-y-6">
                 <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-muted-foreground uppercase tracking-widest">
+                    {post.observationNumber && (
+                        <>
+                            <span className="text-orange-500">Observation #{post.observationNumber}</span>
+                            <span>•</span>
+                        </>
+                    )}
                     <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {post.date}</span>
                     <span>•</span>
                     <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {post.comments?.length || 0} Comments</span>

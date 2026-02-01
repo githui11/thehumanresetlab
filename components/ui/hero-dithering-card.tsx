@@ -39,23 +39,22 @@ export function CTASection() {
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-500 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                             </span>
-                            Liberated & Happy
+                            Human Reset Lab
                         </div>
 
                         {/* Headline */}
-                        <h2 className="font-serif text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-8 leading-[1.05]">
-                            A safe space <br />
-                            <span className="text-white/80">for women to share.</span>
-                        </h2>
+                        <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-6 leading-[1.05]">
+                            Unlearn. Relearn. Reset.
+                        </h1>
 
-                        {/* Description */}
-                        <p className="text-neutral-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
-                            To learn, unlearn, relearn and validate each other’s experiences so that we can do better for the ones who will come after us.
+                        {/* Tagline */}
+                        <p className="text-white/70 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed">
+                            A laboratory for understanding life and reclaiming the human essence.
                         </p>
 
                         {/* Button */}
-                        <a href="#latest-stories" className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20">
-                            <span className="relative z-10">Read Stories</span>
+                        <a href="#field-notes" className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20">
+                            <span className="relative z-10">Enter the Lab</span>
                             <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
                         </a>
                     </div>

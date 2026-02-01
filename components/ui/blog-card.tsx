@@ -13,7 +13,11 @@ export function BlogCard({ post }: BlogCardProps) {
 
                 <div className="relative z-10 space-y-4">
                     <div className="flex items-center justify-between text-sm text-muted-foreground font-mono">
-                        <span>{post.date}</span>
+                        {post.observationNumber ? (
+                            <span className="text-orange-500/80">Observation #{post.observationNumber}</span>
+                        ) : (
+                            <span>{post.date}</span>
+                        )}
                         <div className="flex items-center gap-1">
                             <MessageCircle className="w-4 h-4" />
                             <span>{post.comments?.length || 0}</span>
@@ -45,7 +49,7 @@ export function BlogCard({ post }: BlogCardProps) {
 
                 <div className="relative z-10 pt-6 mt-auto">
                     <span className="flex items-center gap-2 text-primary transform translate-x-0 group-hover:translate-x-2 transition-transform duration-300">
-                        Read Story <ArrowRight className="w-4 h-4" />
+                        {post.observationNumber ? "Read Observation" : "Read More"} <ArrowRight className="w-4 h-4" />
                     </span>
                 </div>
             </article>
