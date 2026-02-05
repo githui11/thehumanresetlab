@@ -19,60 +19,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [email, setEmail] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Refs for safe state access
-    const intasendRef = useRef<any>(null);
-    const isMountedRef = useRef(false);
-
     useEffect(() => {
-        isMountedRef.current = true;
-        return () => { isMountedRef.current = false; };
-    }, []);
-
-    // Helper to safely load the SDK
-    const loadSdk = async () => {
-        if (intasendRef.current) return;
-        try {
-            // Dynamic import
-            const IntaSendModule = (await import("intasend-inlinejs-sdk") as any).default;
-            // @ts-ignore
-            const IntaSendClass = IntaSendModule.default || IntaSendModule;
-
-            // Initialize empty just to permit usage of .continue()
-            const instance = new IntaSendClass({
-                publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
-                live: true,
-            });
-
-            // Bind events
-            instance
-                .on("COMPLETE", (results: any) => {
-                    if (isMountedRef.current) {
-                        setIsProcessing(false);
-                        onClose();
-                        alert("Payment Successful! We will contact you shortly.");
-                    }
-                })
-                .on("FAILED", (results: any) => {
-                    if (isMountedRef.current) {
-                        setIsProcessing(false);
-                        alert("Payment Failed. Please try again.");
-                    }
-                })
-                .on("IN-PROGRESS", (results: any) => {
-                    console.log("Payment in Progress", results);
-                });
-
-            intasendRef.current = instance;
-        } catch (err) {
-            console.error("Failed to load IntaSend SDK", err);
-        }
-    };
-
-    // Pre-load SDK on mount
-    useEffect(() => {
-        if (isOpen) {
-            loadSdk();
-        } else {
+        if (!isOpen) {
             setIsProcessing(false);
         }
     }, [isOpen]);
@@ -85,18 +33,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
         setIsProcessing(true);
 
-        // 1. Ensure SDK Class is loaded
-        if (!intasendRef.current) {
-            await loadSdk();
-        }
-        if (!intasendRef.current) {
-            setIsProcessing(false);
-            alert("Could not load payment buttons. Check connection.");
-            return;
-        }
-
         try {
-            // 2. Server-Side Initialization (Reliable)
+            // Server-Side Initialization to get Checkout Link
             const res = await fetch('/api/initiate-payment', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -113,15 +51,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 throw new Error(errData.error || "Failed to initiate payment");
             }
 
-            const { checkout_id, signature, live } = await res.json();
+            const { url } = await res.json();
 
-            // 3. Handover to SDK for display
-            console.log("Opening Payment Modal via SDK continue...");
-            intasendRef.current.continue({
-                checkoutID: checkout_id,
-                signature: signature,
-                live: live
-            });
+            if (url) {
+                // Redirect user to IntaSend Checkout Linked
+                window.location.href = url;
+            } else {
+                throw new Error("No payment URL returned from server");
+            }
 
         } catch (err: any) {
             console.error("Payment Init Error:", err);
@@ -132,6 +69,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     const handleCancel = () => {
         setIsProcessing(false);
+        onClose(); // Also close modal on cancel if desired, or just stop processing
     };
 
     if (!isOpen) return null;
@@ -174,14 +112,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </div>
 
                     <div className="flex gap-3">
-                        {isProcessing && (
-                            <button
-                                onClick={handleCancel}
-                                className="w-1/3 h-12 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white font-medium rounded-lg transition-all"
-                            >
-                                Cancel
-                            </button>
-                        )}
+                        <button
+                            onClick={handleCancel}
+                            disabled={isProcessing}
+                            className="w-1/3 h-12 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white font-medium rounded-lg transition-all"
+                        >
+                            Cancel
+                        </button>
 
                         <button
                             onClick={handlePay}
@@ -191,7 +128,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             {isProcessing ? (
                                 <>
                                     <Loader2 className="animate-spin mr-2" size={20} />
-                                    Starting...
+                                    Redirecting...
                                 </>
                             ) : (
                                 `Pay KES ${amount.toLocaleString()}`
