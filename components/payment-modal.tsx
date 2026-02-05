@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
-import IntaSend from "intasend-inlinejs-sdk";
+
+// Removed static import to prevent SSR issues
+// import IntaSend from "intasend-inlinejs-sdk";
 
 interface PaymentModalProps {
     isOpen: boolean;
@@ -21,57 +23,74 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [isProcessing, setIsProcessing] = useState(false);
     const intasendRef = useRef<any>(null);
 
-    // Initialize IntaSend Instance immediately when modal opens
-    useEffect(() => {
-        if (isOpen && !intasendRef.current) {
-            try {
-                const instance = new IntaSend({
-                    publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
-                    live: true,
+    // Helper to safely load and init the SDK
+    const initSdk = async () => {
+        if (intasendRef.current) return;
+
+        try {
+            // Dynamic import to ensure it only runs on client
+            const IntaSendModule = (await import("intasend-inlinejs-sdk")).default;
+            // @ts-ignore - Handle potential type mismatch in module resolution
+            const IntaSendClass = IntaSendModule.default || IntaSendModule;
+
+            const instance = new IntaSendClass({
+                publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
+                live: true,
+            });
+
+            instance
+                .on("COMPLETE", (results: any) => {
+                    console.log("Payment Successful", results);
+                    setIsProcessing(false);
+                    onClose();
+                    alert("Payment Successful! We will contact you shortly.");
+                })
+                .on("FAILED", (results: any) => {
+                    console.log("Payment Failed", results);
+                    setIsProcessing(false);
+                    alert("Payment Failed. Please try again.");
+                })
+                .on("IN-PROGRESS", (results: any) => {
+                    console.log("Payment in Progress", results);
                 });
 
-                instance
-                    .on("COMPLETE", (results: any) => {
-                        console.log("Payment Successful", results);
-                        setIsProcessing(false);
-                        onClose();
-                        alert("Payment Successful! We will contact you shortly.");
-                    })
-                    .on("FAILED", (results: any) => {
-                        console.log("Payment Failed", results);
-                        setIsProcessing(false);
-                        alert("Payment Failed. Please try again.");
-                    })
-                    .on("IN-PROGRESS", (results: any) => {
-                        console.log("Payment in Progress", results);
-                    });
+            intasendRef.current = instance;
+        } catch (err) {
+            console.error("Failed to load IntaSend SDK", err);
+        }
+    };
 
-                intasendRef.current = instance;
-            } catch (err) {
-                console.error("Failed to init IntaSend", err);
-            }
+    // Initialize IntaSend Instance immediately when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            initSdk();
         }
     }, [isOpen]);
 
-    const handlePay = () => {
+    const handlePay = async () => {
         if (!email) return;
 
-        // Ensure instance exists (it should, as we import it directly now)
+        setIsProcessing(true);
+
+        // Ensure SDK is ready
         if (!intasendRef.current) {
-            try {
-                const instance = new IntaSend({
-                    publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
-                    live: true,
-                });
-                intasendRef.current = instance;
-            } catch (e) {
-                console.error(e);
-                alert("Could not initialize payment system.");
-                return;
+            await initSdk();
+        }
+
+        if (!intasendRef.current) {
+            // Fallback retry loop
+            let attempts = 0;
+            while (!intasendRef.current && attempts < 10) {
+                await new Promise(r => setTimeout(r, 200));
+                attempts++;
             }
         }
 
-        setIsProcessing(true);
+        if (!intasendRef.current) {
+            setIsProcessing(false);
+            alert("Payment system could not load. Please check your connection.");
+            return;
+        }
 
         try {
             intasendRef.current.run({
