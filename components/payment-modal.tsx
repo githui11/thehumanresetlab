@@ -29,7 +29,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
         try {
             // Dynamic import to ensure it only runs on client
-            const IntaSendModule = (await import("intasend-inlinejs-sdk")).default;
+            const IntaSendModule = (await import("intasend-inlinejs-sdk") as any).default;
             // @ts-ignore - Handle potential type mismatch in module resolution
             const IntaSendClass = IntaSendModule.default || IntaSendModule;
 
