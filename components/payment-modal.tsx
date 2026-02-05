@@ -18,8 +18,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
     const [email, setEmail] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Refs for safe state access in async operations
     const intasendRef = useRef<any>(null);
     const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isMountedRef = useRef(false);
+
+    // Track processing in a ref to avoid stale closures in timeouts
+    const isProcessingRef = useRef(false);
+    useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            clearProcessingTimeout();
+        };
+    }, []);
 
     // Helper to safely load and init the SDK
     const initSdk = async () => {
@@ -40,16 +56,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             instance
                 .on("COMPLETE", (results: any) => {
                     console.log("Payment Successful", results);
-                    clearProcessingTimeout();
-                    setIsProcessing(false);
-                    onClose();
-                    alert("Payment Successful! We will contact you shortly.");
+                    handlePaymentResult("success");
                 })
                 .on("FAILED", (results: any) => {
                     console.log("Payment Failed", results);
-                    clearProcessingTimeout();
-                    setIsProcessing(false);
-                    alert("Payment Failed. Please try again.");
+                    handlePaymentResult("failed");
                 })
                 .on("IN-PROGRESS", (results: any) => {
                     console.log("Payment in Progress", results);
@@ -58,6 +69,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             intasendRef.current = instance;
         } catch (err) {
             console.error("Failed to load IntaSend SDK", err);
+        }
+    };
+
+    const handlePaymentResult = (status: "success" | "failed") => {
+        clearProcessingTimeout();
+        if (isMountedRef.current) {
+            setIsProcessing(false);
+            if (status === "success") {
+                onClose();
+                alert("Payment Successful! We will contact you shortly.");
+            } else {
+                alert("Payment Failed. Please try again.");
+            }
         }
     };
 
@@ -91,8 +115,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             await initSdk();
         }
 
+        // Retry loop for SDK
         if (!intasendRef.current) {
-            // Fallback retry loop
             let attempts = 0;
             while (!intasendRef.current && attempts < 10) {
                 await new Promise(r => setTimeout(r, 200));
@@ -112,11 +136,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             // Start Watchdog: If nothing happens in 10 seconds, reset state
             clearProcessingTimeout();
             processingTimeoutRef.current = setTimeout(() => {
-                if (isProcessing) { // Accessing state in timeout closure might be stale, but check ref ok? 
-                    // Better to rely on the fact that if this runs, it wasn't cleared.
+                // Check ref instead of state to avoid stale closure
+                if (isProcessingRef.current) {
                     console.warn("Payment watchdog timed out.");
                     setIsProcessing(false);
-                    alert("Payment provider is taking too long to respond. Please ensure your email is valid and try again.");
+                    alert("Connection timeout. Please try again.");
                 }
             }, 10000);
 
@@ -135,13 +159,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     };
 
-    // Reset state when modal opens
-    useEffect(() => {
-        if (isOpen) {
-            setEmail("");
-            setIsProcessing(false);
-        }
-    }, [isOpen]);
+    // Manual cancel in case of hangs
+    const handleCancel = () => {
+        clearProcessingTimeout();
+        setIsProcessing(false);
+    };
 
     if (!isOpen) return null;
 
@@ -154,6 +176,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     <button
                         onClick={onClose}
                         className="text-neutral-400 hover:text-white transition-colors"
+                        disabled={isProcessing}
                     >
                         <X size={24} />
                     </button>
@@ -178,24 +201,36 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
-                            className="w-full px-4 py-3 bg-neutral-950 border border-neutral-800 rounded-lg text-white focus:outline-none focus:border-orange-500 transition-colors"
+                            disabled={isProcessing}
+                            className="w-full px-4 py-3 bg-neutral-950 border border-neutral-800 rounded-lg text-white focus:outline-none focus:border-orange-500 transition-colors disabled:opacity-50"
                         />
                     </div>
 
-                    <button
-                        onClick={handlePay}
-                        disabled={!email || isProcessing}
-                        className="w-full h-12 flex items-center justify-center bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all"
-                    >
-                        {isProcessing ? (
-                            <>
-                                <Loader2 className="animate-spin mr-2" size={20} />
-                                Processing...
-                            </>
-                        ) : (
-                            `Pay KES ${amount.toLocaleString()}`
+                    <div className="flex gap-3">
+                        {isProcessing && (
+                            <button
+                                onClick={handleCancel}
+                                className="w-1/3 h-12 flex items-center justify-center bg-neutral-800 hover:bg-neutral-700 text-white font-medium rounded-lg transition-all"
+                            >
+                                Cancel
+                            </button>
                         )}
-                    </button>
+
+                        <button
+                            onClick={handlePay}
+                            disabled={!email || isProcessing}
+                            className={`flex-1 h-12 flex items-center justify-center bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all`}
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <Loader2 className="animate-spin mr-2" size={20} />
+                                    Processing...
+                                </>
+                            ) : (
+                                `Pay KES ${amount.toLocaleString()}`
+                            )}
+                        </button>
+                    </div>
 
                     <p className="text-xs text-center text-neutral-500">
                         Secured by IntaSend (M-Pesa & Card)
