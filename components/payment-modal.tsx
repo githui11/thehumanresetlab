@@ -19,48 +19,44 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [email, setEmail] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Refs for safe state access in async operations
+    // Refs for safe state access
     const intasendRef = useRef<any>(null);
-    const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(false);
 
-    // Track processing in a ref to avoid stale closures in timeouts
-    const isProcessingRef = useRef(false);
-    useEffect(() => { isProcessingRef.current = isProcessing; }, [isProcessing]);
-
-    // Cleanup on unmount
     useEffect(() => {
         isMountedRef.current = true;
-        return () => {
-            isMountedRef.current = false;
-            clearProcessingTimeout();
-        };
+        return () => { isMountedRef.current = false; };
     }, []);
 
-    // Helper to safely load and init the SDK
-    const initSdk = async () => {
+    // Helper to safely load the SDK
+    const loadSdk = async () => {
         if (intasendRef.current) return;
-
         try {
-            // Dynamic import to ensure it only runs on client
+            // Dynamic import
             const IntaSendModule = (await import("intasend-inlinejs-sdk") as any).default;
-            // @ts-ignore - Handle potential type mismatch in module resolution
+            // @ts-ignore
             const IntaSendClass = IntaSendModule.default || IntaSendModule;
 
-            console.log("Initializing IntaSend SDK...");
+            // Initialize empty just to permit usage of .continue()
             const instance = new IntaSendClass({
                 publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
                 live: true,
             });
 
+            // Bind events
             instance
                 .on("COMPLETE", (results: any) => {
-                    console.log("Payment Successful", results);
-                    handlePaymentResult("success");
+                    if (isMountedRef.current) {
+                        setIsProcessing(false);
+                        onClose();
+                        alert("Payment Successful! We will contact you shortly.");
+                    }
                 })
                 .on("FAILED", (results: any) => {
-                    console.log("Payment Failed", results);
-                    handlePaymentResult("failed");
+                    if (isMountedRef.current) {
+                        setIsProcessing(false);
+                        alert("Payment Failed. Please try again.");
+                    }
                 })
                 .on("IN-PROGRESS", (results: any) => {
                     console.log("Payment in Progress", results);
@@ -72,32 +68,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     };
 
-    const handlePaymentResult = (status: "success" | "failed") => {
-        clearProcessingTimeout();
-        if (isMountedRef.current) {
-            setIsProcessing(false);
-            if (status === "success") {
-                onClose();
-                alert("Payment Successful! We will contact you shortly.");
-            } else {
-                alert("Payment Failed. Please try again.");
-            }
-        }
-    };
-
-    const clearProcessingTimeout = () => {
-        if (processingTimeoutRef.current) {
-            clearTimeout(processingTimeoutRef.current);
-            processingTimeoutRef.current = null;
-        }
-    };
-
-    // Initialize IntaSend Instance immediately when modal opens
+    // Pre-load SDK on mount
     useEffect(() => {
         if (isOpen) {
-            initSdk();
+            loadSdk();
         } else {
-            clearProcessingTimeout();
             setIsProcessing(false);
         }
     }, [isOpen]);
@@ -110,58 +85,52 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
         setIsProcessing(true);
 
-        // Ensure SDK is ready
+        // 1. Ensure SDK Class is loaded
         if (!intasendRef.current) {
-            await initSdk();
+            await loadSdk();
         }
-
-        // Retry loop for SDK
-        if (!intasendRef.current) {
-            let attempts = 0;
-            while (!intasendRef.current && attempts < 10) {
-                await new Promise(r => setTimeout(r, 200));
-                attempts++;
-            }
-        }
-
         if (!intasendRef.current) {
             setIsProcessing(false);
-            alert("Payment system could not load. Please check your connection.");
+            alert("Could not load payment buttons. Check connection.");
             return;
         }
 
         try {
-            console.log("Starting payment run...");
-
-            // Start Watchdog: If nothing happens in 10 seconds, reset state
-            clearProcessingTimeout();
-            processingTimeoutRef.current = setTimeout(() => {
-                // Check ref instead of state to avoid stale closure
-                if (isProcessingRef.current) {
-                    console.warn("Payment watchdog timed out.");
-                    setIsProcessing(false);
-                    alert("Connection timeout. Please try again.");
-                }
-            }, 10000);
-
-            intasendRef.current.run({
-                amount: amount,
-                currency: "KES",
-                email: email,
-                api_ref: `service-${Date.now()}`,
-                comment: `Payment for ${serviceName}`,
+            // 2. Server-Side Initialization (Reliable)
+            const res = await fetch('/api/initiate-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount,
+                    email,
+                    api_ref: `service-${Date.now()}`,
+                    comment: `Payment for ${serviceName}`
+                })
             });
-        } catch (err) {
-            console.error(err);
-            clearProcessingTimeout();
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || "Failed to initiate payment");
+            }
+
+            const { checkout_id, signature, live } = await res.json();
+
+            // 3. Handover to SDK for display
+            console.log("Opening Payment Modal via SDK continue...");
+            intasendRef.current.continue({
+                checkoutID: checkout_id,
+                signature: signature,
+                live: live
+            });
+
+        } catch (err: any) {
+            console.error("Payment Init Error:", err);
             setIsProcessing(false);
-            alert("An error occurred starting payment.");
+            alert(`Error: ${err.message}`);
         }
     };
 
-    // Manual cancel in case of hangs
     const handleCancel = () => {
-        clearProcessingTimeout();
         setIsProcessing(false);
     };
 
@@ -170,7 +139,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
             <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl shadow-xl overflow-hidden">
-                {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-neutral-800">
                     <h3 className="text-xl font-medium text-white">Confirm Booking</h3>
                     <button
@@ -182,7 +150,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </button>
                 </div>
 
-                {/* Content */}
                 <div className="p-6 space-y-6">
                     <div className="space-y-1">
                         <p className="text-sm text-neutral-400">Service</p>
@@ -224,7 +191,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                             {isProcessing ? (
                                 <>
                                     <Loader2 className="animate-spin mr-2" size={20} />
-                                    Processing...
+                                    Starting...
                                 </>
                             ) : (
                                 `Pay KES ${amount.toLocaleString()}`
