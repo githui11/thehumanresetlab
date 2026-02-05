@@ -21,7 +21,7 @@ export async function POST(req: Request) {
             mode: "popup",
             is_mobile: false, // Server doesn't know, but we assume desktop/standard for checkout creation
             is_ios: false,
-            host: "thehumanresetlab.com", // Optional, can use headers if needed
+            host: "https://thehumanresetlab.com",
             callback_url: null
         };
 
