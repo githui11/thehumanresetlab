@@ -1,11 +1,31 @@
 "use client"
 
+import { useState } from "react";
 import { CTASection } from "@/components/ui/hero-dithering-card";
 import { blogPosts } from "@/lib/data";
 import { BlogCard } from "@/components/ui/blog-card";
 import { ArrowRight } from "lucide-react";
+import { PaymentModal } from "@/components/payment-modal";
 
 export default function Home() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState("");
+  const [selectedAmount, setSelectedAmount] = useState(0);
+
+  const handleBookSession = (service: string, amount: number) => {
+    setSelectedService(service);
+    setSelectedAmount(amount);
+    setIsModalOpen(true);
+  };
+
+  const scrollToWorkbench = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = document.getElementById('workbench');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/30">
 
@@ -56,7 +76,7 @@ export default function Home() {
       </section>
 
       {/* Workbench Section */}
-      <section className="relative z-10 py-20 px-4 md:px-8 border-t border-border">
+      <section id="workbench" className="relative z-10 py-20 px-4 md:px-8 border-t border-border">
         <div className="max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-4">
             <h2 className="text-3xl md:text-4xl font-medium tracking-tight">The Workbench: Work with the Lab</h2>
@@ -67,27 +87,36 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Logic Check */}
-            <div className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4">
-              <h3 className="text-xl font-medium text-white">The Logic Check</h3>
-              <p className="text-sm text-orange-500/80">30 Minutes</p>
+            <div
+              onClick={() => handleBookSession("The Logic Check", 3000)}
+              className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4 cursor-pointer hover:border-orange-500/50 hover:bg-neutral-900 transition-all group"
+            >
+              <h3 className="text-xl font-medium text-white group-hover:text-orange-500 transition-colors">The Logic Check</h3>
+              <p className="text-sm text-orange-500/80">30 Minutes • KES 3,000</p>
               <p className="text-neutral-400 text-sm leading-relaxed">
                 A focused dive into a single existential knot or human friction.
               </p>
             </div>
 
             {/* Deep Reset */}
-            <div className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4">
-              <h3 className="text-xl font-medium text-white">The Deep Reset</h3>
-              <p className="text-sm text-orange-500/80">60 Minutes</p>
+            <div
+              onClick={() => handleBookSession("The Deep Reset", 6000)}
+              className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4 cursor-pointer hover:border-orange-500/50 hover:bg-neutral-900 transition-all group"
+            >
+              <h3 className="text-xl font-medium text-white group-hover:text-orange-500 transition-colors">The Deep Reset</h3>
+              <p className="text-sm text-orange-500/80">60 Minutes • KES 6,000</p>
               <p className="text-neutral-400 text-sm leading-relaxed">
                 A collaborative deconstruction of the masks you are currently wearing to find the path forward.
               </p>
             </div>
 
             {/* Intellectual Partnership */}
-            <div className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4">
-              <h3 className="text-xl font-medium text-white">Intellectual Partnership</h3>
-              <p className="text-sm text-orange-500/80">Bespoke</p>
+            <div
+              onClick={() => handleBookSession("Intellectual Partnership", 15000)}
+              className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/50 space-y-4 cursor-pointer hover:border-orange-500/50 hover:bg-neutral-900 transition-all group"
+            >
+              <h3 className="text-xl font-medium text-white group-hover:text-orange-500 transition-colors">Intellectual Partnership</h3>
+              <p className="text-sm text-orange-500/80">Bespoke • From KES 15,000</p>
               <p className="text-neutral-400 text-sm leading-relaxed">
                 Bespoke writing and thought-leadership for those who want to find the "Human Essence" in their brand or project.
               </p>
@@ -95,7 +124,11 @@ export default function Home() {
           </div>
 
           <div className="text-center">
-            <a href="#" className="group inline-flex h-14 items-center justify-center gap-3 rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20">
+            <a
+              href="#workbench"
+              onClick={scrollToWorkbench}
+              className="group inline-flex h-14 items-center justify-center gap-3 rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20"
+            >
               <span>Enter the Lab / Book a Session</span>
               <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </a>
@@ -107,6 +140,13 @@ export default function Home() {
       <footer className="border-t border-border bg-muted/40 py-12 text-center text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} Human Reset Lab. All rights reserved.</p>
       </footer>
+
+      <PaymentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        serviceName={selectedService}
+        amount={selectedAmount}
+      />
     </div>
   );
 }
