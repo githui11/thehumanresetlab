@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Script from "next/script";
 import { X, Loader2 } from "lucide-react";
 
 // Declare IntaSend on window
@@ -28,11 +27,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [isProcessing, setIsProcessing] = useState(false);
     const [sdkLoaded, setSdkLoaded] = useState(false);
 
-    // Reset state when modal opens
+    // Reset state when modal opens and check for SDK
     useEffect(() => {
         if (isOpen) {
             setEmail("");
             setIsProcessing(false);
+
+            // Check if SDK is already loaded
+            if (window.IntaSend) {
+                setSdkLoaded(true);
+            } else {
+                // If not, poll for it
+                const checkSdk = setInterval(() => {
+                    if (window.IntaSend) {
+                        setSdkLoaded(true);
+                        clearInterval(checkSdk);
+                    }
+                }, 500);
+
+                // Cleanup
+                return () => clearInterval(checkSdk);
+            }
         }
     }, [isOpen]);
 
@@ -83,12 +98,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-            {/* Load IntaSend SDK */}
-            <Script
-                src="https://unpkg.com/intasend-inlinejs-sdk@3.0.4/dist/inline.js"
-                onLoad={() => setSdkLoaded(true)}
-            />
-
             <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl shadow-xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-neutral-800">
