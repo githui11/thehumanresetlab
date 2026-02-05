@@ -31,7 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <Script src="https://unpkg.com/intasend-inlinejs-sdk@3.0.4/dist/inline.js" strategy="beforeInteractive" />
+        <Script src="https://unpkg.com/intasend-inlinejs-sdk@3.0.4/dist/inline.js" strategy="afterInteractive" />
       </body>
     </html>
   );
