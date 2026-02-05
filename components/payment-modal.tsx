@@ -52,7 +52,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }, [isOpen]);
 
     const handlePay = () => {
-        if (!email || !window.IntaSend) return;
+        if (!email) return;
+
+        // Check for SDK with explicit feedback
+        if (!window.IntaSend) {
+            alert("Secure Payment System is still initializing. Please wait a second and try again.");
+            return;
+        }
 
         setIsProcessing(true);
 
