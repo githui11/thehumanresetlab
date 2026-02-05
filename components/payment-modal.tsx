@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
 
 // Declare IntaSend on window
@@ -25,28 +25,37 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
     const [email, setEmail] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
-    const [sdkLoaded, setSdkLoaded] = useState(false);
+    const intasendRef = useRef<any>(null);
 
-    // Reset state when modal opens and check for SDK
+    // Initialize IntaSend Instance immediately when modal opens or SDK loads
     useEffect(() => {
-        if (isOpen) {
-            setEmail("");
-            setIsProcessing(false);
+        if (window.IntaSend && !intasendRef.current) {
+            try {
+                const instance = new window.IntaSend({
+                    publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
+                    live: true,
+                });
 
-            // Check if SDK is already loaded
-            if (window.IntaSend) {
-                setSdkLoaded(true);
-            } else {
-                // If not, poll for it
-                const checkSdk = setInterval(() => {
-                    if (window.IntaSend) {
-                        setSdkLoaded(true);
-                        clearInterval(checkSdk);
-                    }
-                }, 500);
+                // Attach listeners once
+                instance
+                    .on("COMPLETE", (results: any) => {
+                        console.log("Payment Successful", results);
+                        setIsProcessing(false);
+                        onClose();
+                        alert("Payment Successful! We will contact you shortly.");
+                    })
+                    .on("FAILED", (results: any) => {
+                        console.log("Payment Failed", results);
+                        setIsProcessing(false);
+                        alert("Payment Failed. Please try again.");
+                    })
+                    .on("IN-PROGRESS", (results: any) => {
+                        console.log("Payment in Progress", results);
+                    });
 
-                // Cleanup
-                return () => clearInterval(checkSdk);
+                intasendRef.current = instance;
+            } catch (err) {
+                console.error("Failed to init IntaSend", err);
             }
         }
     }, [isOpen]);
@@ -54,51 +63,46 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const handlePay = () => {
         if (!email) return;
 
-        // Check for SDK with explicit feedback
-        if (!window.IntaSend) {
-            alert("Secure Payment System is still initializing. Please wait a second and try again.");
+        // Fallback initialization if ref is missing (unexpected if script is loaded)
+        if (!intasendRef.current && window.IntaSend) {
+            try {
+                const instance = new window.IntaSend({
+                    publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
+                    live: true,
+                });
+                intasendRef.current = instance;
+            } catch (e) { console.error(e) }
+        }
+
+        if (!intasendRef.current) {
+            alert("Payment system initializing... please click again.");
             return;
         }
 
         setIsProcessing(true);
 
         try {
-            // Initialize IntaSend
-            const intasend = new window.IntaSend({
-                // Production Key
-                publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
-                live: true,
-            });
-
-            intasend
-                .on("COMPLETE", (results: any) => {
-                    console.log("Payment Successful", results);
-                    setIsProcessing(false);
-                    onClose();
-                    alert("Payment Successful! We will contact you shortly.");
-                })
-                .on("FAILED", (results: any) => {
-                    console.log("Payment Failed", results);
-                    setIsProcessing(false);
-                    alert("Payment Failed. Please try again.");
-                })
-                .on("IN-PROGRESS", (results: any) => {
-                    console.log("Payment in Progress", results);
-                });
-
-            intasend.run({
+            intasendRef.current.run({
                 amount: amount,
                 currency: "KES",
                 email: email,
-                api_ref: `service-${Date.now()}`, // Unique reference
+                api_ref: `service-${Date.now()}`,
                 comment: `Payment for ${serviceName}`,
             });
         } catch (err) {
             console.error(err);
             setIsProcessing(false);
-            alert("An error occurred initializing payment.");
+            alert("An error occurred starting payment.");
         }
     };
+
+    // Reset state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setEmail("");
+            setIsProcessing(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
