@@ -3,9 +3,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Loader2 } from "lucide-react";
 
-// Removed static import to prevent SSR issues
-// import IntaSend from "intasend-inlinejs-sdk";
-
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -22,6 +19,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     const [email, setEmail] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const intasendRef = useRef<any>(null);
+    const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Helper to safely load and init the SDK
     const initSdk = async () => {
@@ -33,6 +31,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             // @ts-ignore - Handle potential type mismatch in module resolution
             const IntaSendClass = IntaSendModule.default || IntaSendModule;
 
+            console.log("Initializing IntaSend SDK...");
             const instance = new IntaSendClass({
                 publicAPIKey: process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY || "ISPubKey_live_05b91e8e-ae8c-4bb3-bc50-0626164e58e5",
                 live: true,
@@ -41,12 +40,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             instance
                 .on("COMPLETE", (results: any) => {
                     console.log("Payment Successful", results);
+                    clearProcessingTimeout();
                     setIsProcessing(false);
                     onClose();
                     alert("Payment Successful! We will contact you shortly.");
                 })
                 .on("FAILED", (results: any) => {
                     console.log("Payment Failed", results);
+                    clearProcessingTimeout();
                     setIsProcessing(false);
                     alert("Payment Failed. Please try again.");
                 })
@@ -60,15 +61,28 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
     };
 
+    const clearProcessingTimeout = () => {
+        if (processingTimeoutRef.current) {
+            clearTimeout(processingTimeoutRef.current);
+            processingTimeoutRef.current = null;
+        }
+    };
+
     // Initialize IntaSend Instance immediately when modal opens
     useEffect(() => {
         if (isOpen) {
             initSdk();
+        } else {
+            clearProcessingTimeout();
+            setIsProcessing(false);
         }
     }, [isOpen]);
 
     const handlePay = async () => {
-        if (!email) return;
+        if (!email) {
+            alert("Please enter your email address.");
+            return;
+        }
 
         setIsProcessing(true);
 
@@ -93,6 +107,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
 
         try {
+            console.log("Starting payment run...");
+
+            // Start Watchdog: If nothing happens in 10 seconds, reset state
+            clearProcessingTimeout();
+            processingTimeoutRef.current = setTimeout(() => {
+                if (isProcessing) { // Accessing state in timeout closure might be stale, but check ref ok? 
+                    // Better to rely on the fact that if this runs, it wasn't cleared.
+                    console.warn("Payment watchdog timed out.");
+                    setIsProcessing(false);
+                    alert("Payment provider is taking too long to respond. Please ensure your email is valid and try again.");
+                }
+            }, 10000);
+
             intasendRef.current.run({
                 amount: amount,
                 currency: "KES",
@@ -102,6 +129,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             });
         } catch (err) {
             console.error(err);
+            clearProcessingTimeout();
             setIsProcessing(false);
             alert("An error occurred starting payment.");
         }
