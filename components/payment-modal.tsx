@@ -135,7 +135,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
                     <button
                         onClick={handlePay}
-                        disabled={!email || isProcessing || !sdkLoaded}
+                        disabled={!email || isProcessing}
                         className="w-full h-12 flex items-center justify-center bg-orange-600 hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all"
                     >
                         {isProcessing ? (
@@ -143,8 +143,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 <Loader2 className="animate-spin mr-2" size={20} />
                                 Processing...
                             </>
-                        ) : !sdkLoaded ? (
-                            "Loading Secure Payment..."
                         ) : (
                             `Pay KES ${amount.toLocaleString()}`
                         )}
