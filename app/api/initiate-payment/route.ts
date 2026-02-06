@@ -6,7 +6,7 @@ const IntaSend = require('intasend-node');
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { amount, email, api_ref, comment } = body;
+        const { amount, email, phone_number, api_ref, comment } = body;
 
         const publishableKey = process.env.NEXT_PUBLIC_INTASEND_PUBLISHABLE_KEY;
         const secretKey = process.env.INTASEND_SECRET_KEY;
@@ -27,21 +27,20 @@ export async function POST(req: Request) {
 
         const collection = intasend.collection();
 
-        const resp = await collection.charge({
+        // Use M-Pesa STK Push directly
+        const resp = await collection.mpesaStkPush({
             first_name: 'Guest',
             last_name: 'User',
             email: email,
+            phone_number: phone_number,
             host: "https://thehumanresetlab.com",
             amount: amount,
-            currency: 'KES',
             api_ref: api_ref,
-            comment: comment,
-            redirect_url: 'https://thehumanresetlab.com/payment-success?ref=' + api_ref
         });
 
-        console.log("IntaSend Charge Response:", resp);
+        console.log("IntaSend STK Push Response:", resp);
 
-        return NextResponse.json({ url: resp.url });
+        return NextResponse.json(resp);
 
     } catch (err: any) {
         console.error("Payment Init Error:", err);
