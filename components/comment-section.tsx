@@ -21,9 +21,6 @@ export function CommentSection({ initialComments }: { initialComments?: any[] })
     const [username, setUsername] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Track comment IDs posted in this session so only the author can edit/delete
-    const [sessionCommentIds, setSessionCommentIds] = useState<Set<string>>(new Set());
-
     // Editing State
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editText, setEditText] = useState("");
@@ -43,7 +40,6 @@ export function CommentSection({ initialComments }: { initialComments?: any[] })
             };
 
             setComments([...comments, comment]);
-            setSessionCommentIds(prev => new Set(prev).add(comment.id));
             setNewComment("");
             setIsSubmitting(false);
         }, 300);
@@ -116,21 +112,19 @@ export function CommentSection({ initialComments }: { initialComments?: any[] })
                                     <span className="font-medium text-foreground">{comment.user}</span>
                                     <span className="text-xs text-muted-foreground">{comment.date}</span>
                                 </div>
-                                {sessionCommentIds.has(comment.id) && (
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {editingId === comment.id ? (
-                                            <>
-                                                <Button size="icon" variant="ghost" onClick={() => saveEdit(comment.id)} className="text-green-500 hover:text-green-600 h-8 w-8"><Check className="w-4 h-4" /></Button>
-                                                <Button size="icon" variant="ghost" onClick={() => setEditingId(null)} className="text-destructive hover:text-destructive/80 h-8 w-8"><X className="w-4 h-4" /></Button>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Button size="icon" variant="ghost" onClick={() => startEditing(comment)} className="text-muted-foreground hover:text-primary h-8 w-8"><Pencil className="w-4 h-4" /></Button>
-                                                <Button size="icon" variant="ghost" onClick={() => handleDelete(comment.id)} className="text-muted-foreground hover:text-destructive h-8 w-8"><Trash2 className="w-4 h-4" /></Button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    {editingId === comment.id ? (
+                                        <>
+                                            <Button size="icon" variant="ghost" onClick={() => saveEdit(comment.id)} className="text-green-500 hover:text-green-600 h-8 w-8"><Check className="w-4 h-4" /></Button>
+                                            <Button size="icon" variant="ghost" onClick={() => setEditingId(null)} className="text-destructive hover:text-destructive/80 h-8 w-8"><X className="w-4 h-4" /></Button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Button size="icon" variant="ghost" onClick={() => startEditing(comment)} className="text-muted-foreground hover:text-primary h-8 w-8"><Pencil className="w-4 h-4" /></Button>
+                                            <Button size="icon" variant="ghost" onClick={() => handleDelete(comment.id)} className="text-muted-foreground hover:text-destructive h-8 w-8"><Trash2 className="w-4 h-4" /></Button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
 
                             {editingId === comment.id ? (
