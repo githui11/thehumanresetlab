@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react"
 import { useState, Suspense, lazy } from "react"
+import Link from "next/link"
 
 const Dithering = lazy(() =>
     import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -53,10 +54,10 @@ export function CTASection() {
                         </p>
 
                         {/* Button */}
-                        <a href="#field-notes" className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20">
+                        <Link href="/field-notes" className="group relative inline-flex h-14 items-center justify-center gap-3 overflow-hidden rounded-full bg-white px-12 text-base font-medium text-neutral-950 transition-all duration-300 hover:bg-neutral-200 hover:scale-105 active:scale-95 hover:ring-4 hover:ring-white/20">
                             <span className="relative z-10">Enter the Lab</span>
                             <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

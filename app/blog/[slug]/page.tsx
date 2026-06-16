@@ -1,6 +1,6 @@
 import { blogPosts } from "@/lib/data";
 import Link from "next/link";
-import { ArrowLeft, Calendar, MessageCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Calendar, MessageCircle } from "lucide-react";
 import { notFound } from "next/navigation";
 import nextDynamic from 'next/dynamic';
 
@@ -23,11 +23,15 @@ export async function generateStaticParams() {
 
 export default async function BlogPostPage({ params }: PageProps) {
     const { slug } = await params;
-    const post = blogPosts.find((p) => p.slug === slug);
+    const postIndex = blogPosts.findIndex((p) => p.slug === slug);
+    const post = blogPosts[postIndex];
 
     if (!post) {
         notFound();
     }
+
+    const previousPost = postIndex > 0 ? blogPosts[postIndex - 1] : null;
+    const nextPost = postIndex < blogPosts.length - 1 ? blogPosts[postIndex + 1] : null;
 
     return (
         <article className="min-h-screen bg-background text-foreground selection:bg-primary/30 pb-20">
@@ -36,10 +40,10 @@ export default async function BlogPostPage({ params }: PageProps) {
             <nav className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link
-                        href="/"
+                        href="/field-notes"
                         className="flex items-center gap-2 text-sm text-primary hover:text-primary/70 transition-colors"
                     >
-                        <ArrowLeft className="w-4 h-4" /> Back to Home
+                        <ArrowLeft className="w-4 h-4" /> Back to Field Notes
                     </Link>
                     <span className="font-mono text-xs text-muted-foreground hidden sm:block">Human Reset Lab</span>
                 </div>
@@ -101,6 +105,46 @@ export default async function BlogPostPage({ params }: PageProps) {
 
                 {/* Comments Section */}
                 <CommentSection initialComments={post.comments} />
+            </div>
+
+            {/* Prev / Next Observation Navigation */}
+            <div className="max-w-3xl mx-auto mt-16 px-6 pt-10 border-t border-border">
+                <div className="flex flex-col sm:flex-row justify-between gap-6">
+                    {previousPost ? (
+                        <Link
+                            href={`/blog/${previousPost.slug}`}
+                            className="group flex-1 flex items-center gap-3 text-left"
+                        >
+                            <ArrowLeft className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Previous</p>
+                                <p className="text-foreground group-hover:text-primary transition-colors">{previousPost.title}</p>
+                            </div>
+                        </Link>
+                    ) : <div className="flex-1" />}
+
+                    {nextPost ? (
+                        <Link
+                            href={`/blog/${nextPost.slug}`}
+                            className="group flex-1 flex items-center justify-end gap-3 text-right"
+                        >
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Next</p>
+                                <p className="text-foreground group-hover:text-primary transition-colors">{nextPost.title}</p>
+                            </div>
+                            <ArrowRight className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+                        </Link>
+                    ) : <div className="flex-1" />}
+                </div>
+
+                <div className="text-center mt-10">
+                    <Link
+                        href="/field-notes"
+                        className="text-sm text-primary hover:text-primary/70 transition-colors"
+                    >
+                        View all Field Notes
+                    </Link>
+                </div>
             </div>
         </article >
     );

@@ -26,12 +26,12 @@ export default function Home() {
               <span className="text-white">The Human Reset Lab is a sanctuary for the unlearning.</span>
             </p>
             <p>
-              I don't believe in "fixing" people; I believe in deconstructing the noise that covers the truth. By testing the wisdom of the giants—Sartre, Zizek, Lacan, and Aristotle—against the grit of our real-world mess, we find the courage to reclaim our own subjectivity.
+              I don't believe in "fixing" people; I believe in deconstructing the noise that covers the truth. By testing the wisdom of the giants, Sartre, Zizek, Lacan, and Aristotle, against the grit of our real-world mess, we find the courage to reclaim our own subjectivity.
             </p>
           </div>
 
           <blockquote className="border-l-2 border-orange-500/50 pl-6 py-2 italic text-neutral-300">
-            "It is the mark of an educated mind to entertain a thought without accepting it." — Aristotle
+            "It is the mark of an educated mind to entertain a thought without accepting it." ~ Aristotle
           </blockquote>
         </div>
       </section>
