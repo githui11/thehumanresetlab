@@ -108,36 +108,38 @@ export default async function BlogPostPage({ params }: PageProps) {
             </div>
 
             {/* Prev / Next Observation Navigation */}
-            <div className="max-w-3xl mx-auto mt-16 px-6 pt-10 border-t border-border">
-                <div className="flex flex-col sm:flex-row justify-between gap-6">
-                    {previousPost ? (
-                        <Link
-                            href={`/blog/${previousPost.slug}`}
-                            className="group flex-1 flex items-center gap-3 text-left"
-                        >
-                            <ArrowLeft className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Previous</p>
-                                <p className="text-foreground group-hover:text-primary transition-colors">{previousPost.title}</p>
-                            </div>
-                        </Link>
-                    ) : <div className="flex-1" />}
+            <div className="max-w-3xl mx-auto mt-12 px-6 pt-10 border-t border-border space-y-8">
+                {(previousPost || nextPost) && (
+                    <div className={`grid gap-4 ${previousPost && nextPost ? "sm:grid-cols-2" : "grid-cols-1"}`}>
+                        {previousPost && (
+                            <Link
+                                href={`/blog/${previousPost.slug}`}
+                                className="group flex items-center gap-3 rounded-2xl border border-border bg-card/30 p-5 hover:bg-card/60 hover:border-primary/40 transition-all"
+                            >
+                                <ArrowLeft className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:-translate-x-1" />
+                                <div className="min-w-0">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Previous</p>
+                                    <p className="text-foreground group-hover:text-primary transition-colors font-medium truncate">{previousPost.title}</p>
+                                </div>
+                            </Link>
+                        )}
 
-                    {nextPost ? (
-                        <Link
-                            href={`/blog/${nextPost.slug}`}
-                            className="group flex-1 flex items-center justify-end gap-3 text-right"
-                        >
-                            <div>
-                                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Next</p>
-                                <p className="text-foreground group-hover:text-primary transition-colors">{nextPost.title}</p>
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
-                        </Link>
-                    ) : <div className="flex-1" />}
-                </div>
+                        {nextPost && (
+                            <Link
+                                href={`/blog/${nextPost.slug}`}
+                                className="group flex items-center gap-3 rounded-2xl border border-border bg-card/30 p-5 hover:bg-card/60 hover:border-primary/40 transition-all sm:flex-row-reverse sm:text-right"
+                            >
+                                <ArrowRight className="w-4 h-4 text-primary shrink-0 transition-transform duration-300 group-hover:translate-x-1" />
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Next</p>
+                                    <p className="text-foreground group-hover:text-primary transition-colors font-medium truncate">{nextPost.title}</p>
+                                </div>
+                            </Link>
+                        )}
+                    </div>
+                )}
 
-                <div className="text-center mt-10">
+                <div className="text-center">
                     <Link
                         href="/field-notes"
                         className="text-sm text-primary hover:text-primary/70 transition-colors"
