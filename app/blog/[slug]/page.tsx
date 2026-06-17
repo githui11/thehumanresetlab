@@ -77,7 +77,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             </header>
 
             {/* Content */}
-            <div className="max-w-3xl mx-auto px-6 space-y-8 leading-relaxed text-lg font-light text-muted-foreground">
+            <div className="max-w-3xl mx-auto px-6 space-y-8 leading-relaxed text-lg font-light text-muted-foreground" data-cms-content="essay">
                 {post.quote && (
                     <div className="relative my-12 p-8 bg-card/50 rounded-2xl border border-border">
                         <div className="absolute -top-4 -left-2 text-6xl text-primary/20 font-serif">“</div>
