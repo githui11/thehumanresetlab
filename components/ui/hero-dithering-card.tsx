@@ -1,15 +1,15 @@
 "use client"
 
 import { ArrowRight } from "lucide-react"
-import { useState, Suspense, lazy } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-
-const Dithering = lazy(() =>
-    import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
-)
+import { Dithering } from "@paper-design/shaders-react"
 
 export function CTASection() {
     const [isHovered, setIsHovered] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => { setMounted(true) }, [])
 
     return (
         <section className="py-12 w-full flex justify-center items-center px-4 md:px-6">
@@ -19,11 +19,11 @@ export function CTASection() {
                 onMouseLeave={() => setIsHovered(false)}
             >
                 <div className="relative overflow-hidden rounded-[48px] border border-neutral-800 bg-neutral-950 shadow-sm min-h-[600px] md:min-h-[600px] flex flex-col items-center justify-center duration-500">
-                    <Suspense fallback={<div className="absolute inset-0 bg-neutral-900" />}>
+                    {mounted && (
                         <div className="absolute inset-0 z-0 pointer-events-none opacity-60 md:opacity-80 mix-blend-screen">
                             <Dithering
-                                colorBack="#00000000" // Transparent
-                                colorFront="#D65D0E"  // Rust Orange (Gruvbox-like)
+                                colorBack="#00000000"
+                                colorFront="#D65D0E"
                                 shape="warp"
                                 type="4x4"
                                 speed={isHovered ? 0.6 : 0.2}
@@ -31,7 +31,7 @@ export function CTASection() {
                                 minPixelRatio={1}
                             />
                         </div>
-                    </Suspense>
+                    )}
 
                     <div className="relative z-10 px-6 max-w-4xl mx-auto text-center flex flex-col items-center">
 
