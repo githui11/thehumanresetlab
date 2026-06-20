@@ -57,6 +57,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border bg-muted/40 py-12 text-center text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} Human Reset Lab. All rights reserved.</p>
+        <a href="/privacy" className="mt-2 inline-block underline underline-offset-2 hover:text-foreground transition-colors">Privacy Policy</a>
       </footer>
     </div>
   );
